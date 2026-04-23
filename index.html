@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vibe Curator</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'DM Sans', sans-serif; min-height: 100vh; background: #0a0a0a; color: #f0ede8; overflow-x: hidden; }
+    #vc-root { min-height: 100vh; position: relative; overflow: hidden; }
+    .bg-layer { position: fixed; inset: 0; display: grid; grid-template-columns: repeat(3, 1fr); opacity: 0; transition: opacity 1.4s ease; z-index: 0; }
+    .bg-layer.visible { opacity: 1; }
+    .bg-img { width: 100%; height: 100%; object-fit: cover; filter: saturate(0.7) brightness(0.4); }
+    .overlay { position: fixed; inset: 0; background: linear-gradient(to bottom, rgba(10,10,10,0.35) 0%, rgba(10,10,10,0.7) 100%); z-index: 1; opacity: 0; transition: opacity 1.2s; }
+    .content { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; padding: 3.5rem 1.5rem 3rem; min-height: 100vh; }
+    .logo { font-family: 'DM Serif Display', serif; font-size: 2.4rem; letter-spacing: 0.18em; text-transform: uppercase; color: #f0ede8; margin-bottom: 0.3rem; }
+    .logo-sub { font-size: 11px; letter-spacing: 0.35em; text-transform: uppercase; color: rgba(240,237,232,0.4); margin-bottom: 2.8rem; }
+    .input-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-bottom: 1.2rem; width: 100%; max-width: 540px; }
+    .word-input { flex: 1; min-width: 120px; background: rgba(255,255,255,0.07); border: 0.5px solid rgba(240,237,232,0.25); border-radius: 2px; padding: 12px 16px; font-family: 'DM Sans', sans-serif; font-size: 14px; color: #f0ede8; text-align: center; letter-spacing: 0.05em; outline: none; transition: border-color 0.2s, background 0.2s; }
+    .word-input::placeholder { color: rgba(240,237,232,0.3); }
+    .word-input:focus { border-color: rgba(240,237,232,0.55); background: rgba(255,255,255,0.11); }
+    .curate-btn { display: block; width: 100%; max-width: 540px; padding: 13px; background: rgba(240,237,232,0.08); border: 0.5px solid rgba(240,237,232,0.35); border-radius: 2px; font-family: 'DM Sans', sans-serif; font-size: 12px; letter-spacing: 0.22em; text-transform: uppercase; color: #f0ede8; cursor: pointer; transition: background 0.2s, border-color 0.2s; }
+    .curate-btn:hover { background: rgba(240,237,232,0.14); border-color: rgba(240,237,232,0.6); }
+    .curate-btn:disabled { opacity: 0.4; cursor: default; }
+    .loading-text { font-size: 12px; letter-spacing: 0.2em; color: rgba(240,237,232,0.5); margin-top: 1.5rem; text-transform: uppercase; display: none; }
+    .result-section { width: 100%; max-width: 540px; margin-top: 2rem; opacity: 0; transform: translateY(12px); transition: opacity 0.7s ease, transform 0.7s ease; pointer-events: none; }
+    .result-section.visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
+    .vibe-label { font-size: 10px; letter-spacing: 0.35em; text-transform: uppercase; color: rgba(240,237,232,0.4); margin-bottom: 1rem; text-align: center; }
+    .playlist-grid { display: flex; flex-direction: column; gap: 1px; border: 0.5px solid rgba(240,237,232,0.12); border-radius: 3px; overflow: hidden; }
+    .track-item { display: flex; align-items: center; gap: 14px; padding: 13px 16px; background: rgba(10,10,10,0.55); cursor: pointer; text-decoration: none; color: inherit; transition: background 0.15s; border-bottom: 0.5px solid rgba(240,237,232,0.07); }
+    .track-item:last-child { border-bottom: none; }
+    .track-item:hover { background: rgba(240,237,232,0.09); }
+    .track-num { font-size: 11px; color: rgba(240,237,232,0.3); min-width: 16px; text-align: right; }
+    .track-info { flex: 1; min-width: 0; }
+    .track-name { font-size: 14px; font-weight: 500; color: #f0ede8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .track-artist { font-size: 12px; color: rgba(240,237,232,0.45); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+    .track-icon { width: 15px; height: 15px; opacity: 0.35; flex-shrink: 0; fill: #f0ede8; }
+    .words-tag { display: flex; gap: 8px; justify-content: center; margin-top: 1.4rem; flex-wrap: wrap; }
+    .tag { font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; padding: 5px 12px; border: 0.5px solid rgba(240,237,232,0.2); border-radius: 20px; color: rgba(240,237,232,0.5); }
+    .error-msg { font-size: 12px; color: rgba(240,100,100,0.75); text-align: center; margin-top: 1rem; display: none; letter-spacing: 0.05em; }
+    @media (max-width: 480px) { .logo { font-size: 1.8rem; } .word-input { min-width: 80px; } }
+  </style>
+</head>
+<body>
+<div id="vc-root">
+  <div class="bg-layer" id="bgLayer">
+    <img class="bg-img" id="bg1" src="" alt="">
+    <img class="bg-img" id="bg2" src="" alt="">
+    <img class="bg-img" id="bg3" src="" alt="">
+  </div>
+  <div class="overlay" id="overlay"></div>
+  <div class="content">
+    <div class="logo">Vibe Curator</div>
+    <div class="logo-sub">three words · one feeling</div>
+    <div class="input-row">
+      <input class="word-input" id="w1" placeholder="word one" maxlength="20">
+      <input class="word-input" id="w2" placeholder="word two" maxlength="20">
+      <input class="word-input" id="w3" placeholder="word three" maxlength="20">
+    </div>
+    <button class="curate-btn" id="curateBtn" onclick="curate()">Curate my vibe</button>
+    <div class="loading-text" id="loadingTxt">Reading the vibe...</div>
+    <div class="error-msg" id="errorMsg"></div>
+    <div class="result-section" id="resultSection">
+      <div class="vibe-label" id="vibeLabel">your playlist</div>
+      <div class="playlist-grid" id="playlistGrid"></div>
+      <div class="words-tag" id="wordsTags"></div>
+    </div>
+  </div>
+</div>
+<script>
+const IMAGE_BANK = {
+  melancholy:["https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=1200&q=80","https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1200&q=80","https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1200&q=80"],
+  rain:["https://images.unsplash.com/photo-1519692933481-e162a57d6721?w=1200&q=80","https://images.unsplash.com/photo-1500964757637-c85e8a162699?w=1200&q=80","https://images.unsplash.com/photo-1501854140801-50d01698950b?w=1200&q=80"],
+  forest:["https://images.unsplash.com/photo-1448375240586-882707db888b?w=1200&q=80","https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1200&q=80","https://images.unsplash.com/photo-1476231682828-37e571bc172f?w=1200&q=80"],
+  ocean:["https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=1200&q=80","https://images.unsplash.com/photo-1518020382113-a7e8fc38eac9?w=1200&q=80","https://images.unsplash.com/photo-1499346030926-9a72daac6c63?w=1200&q=80"],
+  city:["https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=1200&q=80","https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=1200&q=80","https://images.unsplash.com/photo-1514565131-fce0801e6785?w=1200&q=80"],
+  night:["https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?w=1200&q=80","https://images.unsplash.com/photo-1475274047050-1d0c0975c63e?w=1200&q=80","https://images.unsplash.com/photo-1502481851512-e9e2529bfbf9?w=1200&q=80"],
+  desert:["https://images.unsplash.com/photo-1509316785289-025f5b846b35?w=1200&q=80","https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?w=1200&q=80","https://images.unsplash.com/photo-1530587191325-3db32d826c18?w=1200&q=80"],
+  fire:["https://images.unsplash.com/photo-1515191107209-c28698631303?w=1200&q=80","https://images.unsplash.com/photo-1444603422312-04ece6f8d4a1?w=1200&q=80","https://images.unsplash.com/photo-1513151233558-d860c5398176?w=1200&q=80"],
+  cold:["https://images.unsplash.com/photo-1491002052546-bf38f186af56?w=1200&q=80","https://images.unsplash.com/photo-1479030160180-b1860951d696?w=1200&q=80","https://images.unsplash.com/photo-1516912481808-3406841bd33c?w=1200&q=80"],
+  love:["https://images.unsplash.com/photo-1518199266791-5375a83190b7?w=1200&q=80","https://images.unsplash.com/photo-1474552226712-ac0f0961a954?w=1200&q=80","https://images.unsplash.com/photo-1529634597503-139d3726fed5?w=1200&q=80"],
+  energy:["https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=1200&q=80","https://images.unsplash.com/photo-1524368535928-5b5e00ddc76b?w=1200&q=80","https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=1200&q=80"],
+  peaceful:["https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&q=80","https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?w=1200&q=80","https://images.unsplash.com/photo-1439853949212-36589f9f4541?w=1200&q=80"],
+  nostalgic:["https://images.unsplash.com/photo-1467810563316-b5476525c0f9?w=1200&q=80","https://images.unsplash.com/photo-1533038590840-1cde6e668a91?w=1200&q=80","https://images.unsplash.com/photo-1496080174650-637e3f22fa03?w=1200&q=80"],
+  dark:["https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?w=1200&q=80","https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?w=1200&q=80","https://images.unsplash.com/photo-1504701954957-2010ec3bcec1?w=1200&q=80"],
+  summer:["https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1200&q=80","https://images.unsplash.com/photo-1506953823976-52e1fdc0149a?w=1200&q=80","https://images.unsplash.com/photo-1473496169904-658ba7574b0d?w=1200&q=80"],
+  dreamy:["https://images.unsplash.com/photo-1490730141103-6cac27aaab94?w=1200&q=80","https://images.unsplash.com/photo-1499781350541-7783f6c6a0c8?w=1200&q=80","https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1200&q=80"],
+  space:["https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=1200&q=80","https://images.unsplash.com/photo-1502134249126-9f3755a50d78?w=1200&q=80","https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1200&q=80"],
+  vintage:["https://images.unsplash.com/photo-1517841905240-472988babdf9?w=1200&q=80","https://images.unsplash.com/photo-1519710164239-da123dc03ef4?w=1200&q=80","https://images.unsplash.com/photo-1508672019048-805c876b67e2?w=1200&q=80"],
+};
+const PLAYLISTS = {
+  melancholy:[{t:"Skinny Love",a:"Bon Iver",id:"1hRz2y3beEJnVJrOJHDQTg"},{t:"Holocene",a:"Bon Iver",id:"5U4yFKJ6dqNGn7TpNMhInL"},{t:"Motion Picture Soundtrack",a:"Radiohead",id:"5XbXMCOmH3CsRxXSNRQV1L"},{t:"Lua",a:"Bright Eyes",id:"2ZtN7bFfLqPhvz2sFpHi6I"},{t:"Casimir Pulaski Day",a:"Sufjan Stevens",id:"6FBEd5T9x9Hy8LPbgNJMOk"}],
+  rain:[{t:"Rain",a:"The Beatles",id:"2FsA9JW1SeJFRFzuNaEFMV"},{t:"Set Fire to the Rain",a:"Adele",id:"77VObIrYmvChLGNONqxqXq"},{t:"November Rain",a:"Guns N' Roses",id:"4BbQnkVJiHXZGDTzBPdFzH"},{t:"Riders on the Storm",a:"The Doors",id:"7BXJUfBPZ0PVoML4hZTFuQ"},{t:"Only Happy When It Rains",a:"Garbage",id:"3I6ggI0YxkuZq1fPCFvEJd"}],
+  forest:[{t:"In the Woods Somewhere",a:"Hozier",id:"1TiGJcRJkDpPAqMFiRxVmS"},{t:"Northern Lights",a:"Foals",id:"7k9mJbGq3k1KIc7mjCGQr2"},{t:"Into the Wild",a:"LP",id:"52zcpJOWqfgn3BEdw5hPFl"},{t:"Wild",a:"Troye Sivan",id:"4NAJVAFHrO5a1mCq6LpVTN"},{t:"The Creek",a:"Sufjan Stevens",id:"0nMOgdNdGUDi8yVu1l4TiJ"}],
+  ocean:[{t:"The Ocean",a:"Led Zeppelin",id:"5CQ30WqJwcep0pYcV4AMNc"},{t:"Ocean Eyes",a:"Billie Eilish",id:"4aWmUDTfIPGksMNLV2rQP2"},{t:"La Mer",a:"Charles Trenet",id:"5NcnJrjMKOEgKu9Ky6j7L2"},{t:"Wave",a:"Antonio Carlos Jobim",id:"2ZBqJKGW0aZjAfRTPtXFbA"},{t:"Beyond the Sea",a:"Bobby Darin",id:"4kNmZQcxLKJ6BqfHUBIkOk"}],
+  city:[{t:"Empire State of Mind",a:"Jay-Z ft. Alicia Keys",id:"41TMJF1TFYDAmMFtmGLAoP"},{t:"New York, New York",a:"Frank Sinatra",id:"2mHnJjOeakXjwmBrCUMoJP"},{t:"City of Stars",a:"La La Land Cast",id:"1b3GKiNBVJJvH0hJdT1sDZ"},{t:"Vienna",a:"Billy Joel",id:"1mHnJjOeakXjwmBrCUMoJP"},{t:"Tokyo",a:"The Blue Nile",id:"2k6p2bJVqPLmGHVWxKZqAB"}],
+  night:[{t:"Night Owl",a:"Galimatias",id:"3EuDmfHNQdJnMzpGYkLdMB"},{t:"After Dark",a:"Mr. Kitty",id:"2l2LMNhFn0JSGJ5XUqJTf5"},{t:"The Night We Met",a:"Lord Huron",id:"3hRV0jL3vUpRrcy398teAU"},{t:"Midnight City",a:"M83",id:"6eTGxxvuQxqYgFUQ08Sqwl"},{t:"Nightcall",a:"Kavinsky",id:"0U0ldCRmgCqhVvD3rixndt"}],
+  desert:[{t:"Desert Rose",a:"Sting",id:"2FmDpAOkH9q5UHHyRyNmxN"},{t:"Sand in My Shoes",a:"Dido",id:"7sndkDVnpNUEnW9iJq4IzK"},{t:"Hotel California",a:"Eagles",id:"40riOy7x9W7GXjyGp4pjAv"},{t:"Dust in the Wind",a:"Kansas",id:"4qFa5FH9ipijPrKu95N4Eg"},{t:"Riders on the Storm",a:"The Doors",id:"7BXJUfBPZ0PVoML4hZTFuQ"}],
+  energy:[{t:"Don't Stop Me Now",a:"Queen",id:"7hQJA50XrCWABAu5v6QZ4i"},{t:"Blinding Lights",a:"The Weeknd",id:"0VjIjW4GlUZAMYd2vXMi3b"},{t:"Lose Yourself",a:"Eminem",id:"5Z01UMMf7V1o0MoF3PvaIb"},{t:"Livin' on a Prayer",a:"Bon Jovi",id:"37gAZnHSKKua76KQ4OMdoI"},{t:"Mr. Brightside",a:"The Killers",id:"7d2D2S200NyUE5KzfzmlUE"}],
+  love:[{t:"At Last",a:"Etta James",id:"4k4zFd2lP1XUCFjZ8KJ12f"},{t:"Can't Help Falling in Love",a:"Elvis Presley",id:"44AyOl4qVkzS48vBsbNXaC"},{t:"Make You Feel My Love",a:"Adele",id:"6nW5TJDL7rLbq1zXj4ydKX"},{t:"All of Me",a:"John Legend",id:"3U4isOIWM3VvDubwSI3y7a"},{t:"La Vie en Rose",a:"Édith Piaf",id:"4tCqPOzNMrXCIMXiHtH3ue"}],
+  peaceful:[{t:"Bloom",a:"The Paper Kites",id:"2ld45oTtSk7wv6ZeeBHJRH"},{t:"Holocene",a:"Bon Iver",id:"5U4yFKJ6dqNGn7TpNMhInL"},{t:"Comptine d'un autre été",a:"Yann Tiersen",id:"4Vny5E7G7WBJ7XJWIhTylq"},{t:"River Flows in You",a:"Yiruma",id:"6bnTSPb3G7yxNUAJNt4CKM"},{t:"Clair de Lune",a:"Debussy",id:"3Qm86XLflmIXVm1wcwkgDK"}],
+  nostalgic:[{t:"Fast Car",a:"Tracy Chapman",id:"2mHnJjOeakXjwmBrCUMoJP"},{t:"September",a:"Earth, Wind & Fire",id:"7Cuk8jsPPoNYQWXK9XRFog"},{t:"Africa",a:"Toto",id:"2374M0fQpWi3dLnB54qaLX"},{t:"Come On Eileen",a:"Dexys Midnight Runners",id:"5DPFDN1nrxWCHpkVMzPobG"},{t:"Sweet Home Alabama",a:"Lynyrd Skynyrd",id:"5DnBKpG9tBLtH8Lmpv3oJb"}],
+  dark:[{t:"Hurt",a:"Nine Inch Nails",id:"3qSJD2hjnZ7YDOQx9ieQ0m"},{t:"Black",a:"Pearl Jam",id:"1PM0Rjqn7TKEb2mq4W28M2"},{t:"The Sound of Silence",a:"Simon & Garfunkel",id:"3YfS47QufnLDFA71FUsgCM"},{t:"Mad World",a:"Gary Jules",id:"3JOVTQ5h8HyvI6DmGBO3g2"},{t:"Creep",a:"Radiohead",id:"70LcF31zb1H0PyJoS1Sx1r"}],
+  summer:[{t:"Summer",a:"Calvin Harris",id:"6Lmkag7WKbMp8RVWZbZJpq"},{t:"Good as Hell",a:"Lizzo",id:"6KgBpzTuTRPebChN0VTyzV"},{t:"Cruel Summer",a:"Taylor Swift",id:"1BxfuPKGuaTgP7aM0Ls6tF"},{t:"Electric Feel",a:"MGMT",id:"3FtYbEfBqAlGLmlXQX3CnR"},{t:"Levitating",a:"Dua Lipa",id:"463CkQjx2Zk1yXoBuierM9"}],
+  dreamy:[{t:"Dream a Little Dream",a:"Ella Fitzgerald",id:"4K0OHVLP1bNNFuYVlXmKKT"},{t:"Cherry Wine",a:"Hozier",id:"7aBzpmFXB4WWWXMLSnVvNv"},{t:"Dreams",a:"Fleetwood Mac",id:"0ofHAoxe9vBkTCp2UQIavz"},{t:"In My Life",a:"The Beatles",id:"3KfbEIOC7YIv90FIfNmZst"},{t:"Yellow",a:"Coldplay",id:"3AJwUDP919kvQ9QcozQPxg"}],
+  space:[{t:"Space Oddity",a:"David Bowie",id:"72Z17vmmeQKAg8bptWvpVG"},{t:"Interstellar Theme",a:"Hans Zimmer",id:"6tRgJHBi5lHsZEVzAHIJYz"},{t:"Contact",a:"Daft Punk",id:"1rGBFIJtIl8Bi5DfDPCTBK"},{t:"Apollo",a:"Brian Eno",id:"2FsA9JW1SeJFRFzuNaEFMV"},{t:"Stars",a:"Hozier",id:"1BxfuPKGuaTgP7aM0Ls6tF"}],
+  vintage:[{t:"La Vie en Rose",a:"Louis Armstrong",id:"4tCqPOzNMrXCIMXiHtH3ue"},{t:"What a Wonderful World",a:"Louis Armstrong",id:"29U7stRjqHU6rMiS8BfaI9"},{t:"Moon River",a:"Audrey Hepburn",id:"7MpZJBOAxDVAkRMGlwvQFC"},{t:"Beyond the Sea",a:"Bobby Darin",id:"4kNmZQcxLKJ6BqfHUBIkOk"},{t:"Blue Moon",a:"Billie Holiday",id:"3n3nGQJGVWBMPLrUnGJOCT"}],
+  cold:[{t:"Winter Winds",a:"Mumford & Sons",id:"3lzMACFtcwP9fSkyKMymBM"},{t:"Skinny Love",a:"Bon Iver",id:"1hRz2y3beEJnVJrOJHDQTg"},{t:"Ice",a:"Jon Hopkins",id:"5eaVRSHkJd7FPKxnlSqFZ9"},{t:"Bleak",a:"Radiohead",id:"4KvE7DFvqstFm7lV3ioBJ6"},{t:"First Breath After Coma",a:"Explosions in the Sky",id:"1BxfuPKGuaTgP7aM0Ls6tF"}],
+  fire:[{t:"Ring of Fire",a:"Johnny Cash",id:"4zBFvuIlMf6fMOIklhe7EQ"},{t:"Light My Fire",a:"The Doors",id:"4KS8TFbOYfK2XVtH3Qy4LI"},{t:"Burning Down the House",a:"Talking Heads",id:"45UPGAkMlH5FfpVa26mR7P"},{t:"Fire",a:"Jimi Hendrix",id:"5U4yFKJ6dqNGn7TpNMhInL"},{t:"Great Balls of Fire",a:"Jerry Lee Lewis",id:"6bD6SzA0WR2dKLSl4gCKXx"}],
+};
+const KEYWORDS = Object.keys(IMAGE_BANK);
+const KEYWORD_ALIASES = {sad:'melancholy',lonely:'melancholy',solitude:'melancholy',sadness:'melancholy',tristeza:'melancholy',agua:'ocean',mar:'ocean',sea:'ocean',water:'ocean',wave:'ocean',waves:'ocean',lluvia:'rain',rainy:'rain',storm:'rain',tormenta:'rain',wet:'rain',bosque:'forest',trees:'forest',woods:'forest',arbol:'forest',nature:'forest',naturaleza:'forest',ciudad:'city',urban:'city',town:'city',metro:'city',downtown:'city',noche:'night',nocturno:'night',medianoche:'night',midnight:'night',desierto:'desert',sandy:'desert',seco:'desert',calor:'desert',energia:'energy',music:'energy',concert:'energy',dance:'energy',bailar:'energy',amor:'love',corazon:'love',heart:'love',romance:'love',romantic:'love',paz:'peaceful',calm:'peaceful',tranquilo:'peaceful',sereno:'peaceful',serenity:'peaceful',relax:'peaceful',nostalgia:'nostalgic',memories:'nostalgic',recuerdos:'nostalgic',pasado:'nostalgic',oscuro:'dark',sombra:'dark',shadow:'dark',black:'dark',negro:'dark',verano:'summer',sun:'summer',sol:'summer',beach:'summer',playa:'summer',sueño:'dreamy',dream:'dreamy',clouds:'dreamy',nubes:'dreamy',fantasy:'dreamy',espacio:'space',cosmos:'space',galaxy:'space',galaxia:'space',antiguo:'vintage',retro:'vintage',old:'vintage',viejo:'vintage',classic:'vintage',frio:'cold',nieve:'cold',snow:'cold',hielo:'cold',ice:'cold',winter:'cold',invierno:'cold',fuego:'fire',flame:'fire',llama:'fire',caliente:'fire',hot:'fire'};
+function matchVibe(words) {
+  const norm = words.map(w => w.toLowerCase().trim());
+  for (const w of norm) { if (KEYWORDS.includes(w)) return w; if (KEYWORD_ALIASES[w]) return KEYWORD_ALIASES[w]; for (const k of KEYWORDS) { if (w.includes(k) || k.includes(w)) return k; } }
+  for (const w of norm) { for (const [alias, key] of Object.entries(KEYWORD_ALIASES)) { if (w.includes(alias) || alias.includes(w)) return key; } }
+  return KEYWORDS[Math.floor(Math.random() * KEYWORDS.length)];
+}
+async function curate() {
+  const w1 = document.getElementById('w1').value.trim();
+  const w2 = document.getElementById('w2').value.trim();
+  const w3 = document.getElementById('w3').value.trim();
+  const errorMsg = document.getElementById('errorMsg');
+  if (!w1 || !w2 || !w3) { errorMsg.textContent = 'Ingresá tres palabras para encontrar tu vibe.'; errorMsg.style.display = 'block'; return; }
+  errorMsg.style.display = 'none';
+  const btn = document.getElementById('curateBtn');
+  const loading = document.getElementById('loadingTxt');
+  btn.disabled = true; loading.style.display = 'block';
+  document.getElementById('resultSection').classList.remove('visible');
+  const vibe = matchVibe([w1, w2, w3]);
+  const imgs = IMAGE_BANK[vibe];
+  const tracks = PLAYLISTS[vibe] || PLAYLISTS.dreamy;
+  await new Promise(r => setTimeout(r, 900));
+  document.getElementById('bg1').src = imgs[0];
+  document.getElementById('bg2').src = imgs[1];
+  document.getElementById('bg3').src = imgs[2];
+  document.getElementById('bgLayer').classList.add('visible');
+  document.getElementById('overlay').style.opacity = '1';
+  const grid = document.getElementById('playlistGrid');
+  grid.innerHTML = '';
+  tracks.forEach((track, i) => {
+    const a = document.createElement('a');
+    a.href = `https://open.spotify.com/track/${track.id}`;
+    a.target = '_blank'; a.rel = 'noopener noreferrer'; a.className = 'track-item';
+    a.innerHTML = `<span class="track-num">${i+1}</span><div class="track-info"><div class="track-name">${track.t}</div><div class="track-artist">${track.a}</div></div><svg class="track-icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>`;
+    grid.appendChild(a);
+  });
+  document.getElementById('wordsTags').innerHTML = [w1,w2,w3].map(w => `<span class="tag">${w}</span>`).join('');
+  document.getElementById('vibeLabel').textContent = `${vibe} playlist · 5 tracks`;
+  document.getElementById('resultSection').classList.add('visible');
+  loading.style.display = 'none'; btn.disabled = false; btn.textContent = 'Recurate';
+}
+document.querySelectorAll('.word-input').forEach((input, i, arr) => {
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') { if (i < arr.length - 1) arr[i+1].focus(); else curate(); } });
+});
+</script>
+</body>
+</html>
