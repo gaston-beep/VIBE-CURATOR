@@ -16,7 +16,17 @@
     .content { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; padding: 3.5rem 1.5rem 3rem; min-height: 100vh; }
     .logo { font-family: 'Cormorant Garamond', serif; font-size: 3.2rem; font-weight: 300; letter-spacing: 0.22em; text-transform: uppercase; color: #f0ede8; margin-bottom: 0.2rem; }
     .logo-sub { font-size: 11px; letter-spacing: 0.35em; text-transform: uppercase; color: rgba(240,237,232,0.4); margin-bottom: 0.4rem; }
-    .logo-credit { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(240,237,232,0.25); margin-bottom: 2.4rem; font-family: 'DM Sans', sans-serif; }
+    .logo-credit { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(240,237,232,0.25); margin-bottom: 2rem; font-family: 'DM Sans', sans-serif; }
+
+    /* Spotify connect */
+    .spotify-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 2rem; }
+    .spotify-btn { display: flex; align-items: center; gap: 8px; padding: 9px 18px; background: #1DB954; border: none; border-radius: 20px; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500; letter-spacing: 0.08em; color: #000; cursor: pointer; transition: opacity 0.2s; }
+    .spotify-btn:hover { opacity: 0.85; }
+    .spotify-btn svg { width: 16px; height: 16px; fill: #000; }
+    .spotify-connected { font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; color: rgba(240,237,232,0.35); display: flex; align-items: center; gap: 6px; }
+    .spotify-connected .dot { width: 6px; height: 6px; border-radius: 50%; background: #1DB954; display: inline-block; }
+    .spotify-logout { background: none; border: none; color: rgba(240,237,232,0.25); font-size: 10px; cursor: pointer; margin-left: 8px; letter-spacing: 0.1em; text-decoration: underline; font-family: 'DM Sans', sans-serif; }
+
     .input-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-bottom: 1.2rem; width: 100%; max-width: 540px; }
     .word-input { flex: 1; min-width: 120px; background: rgba(255,255,255,0.07); border: 0.5px solid rgba(240,237,232,0.25); border-radius: 2px; padding: 12px 16px; font-family: 'DM Sans', sans-serif; font-size: 14px; color: #f0ede8; text-align: center; letter-spacing: 0.05em; outline: none; transition: border-color 0.2s, background 0.2s; }
     .word-input::placeholder { color: rgba(240,237,232,0.3); }
@@ -33,6 +43,7 @@
     .track-item:last-child { border-bottom: none; }
     .track-item:hover { background: rgba(240,237,232,0.09); }
     .track-num { font-size: 11px; color: rgba(240,237,232,0.3); min-width: 16px; text-align: right; }
+    .track-cover { width: 36px; height: 36px; border-radius: 2px; object-fit: cover; opacity: 0.85; flex-shrink: 0; background: rgba(255,255,255,0.05); }
     .track-info { flex: 1; min-width: 0; }
     .track-name { font-size: 14px; font-weight: 500; color: #f0ede8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .track-artist { font-size: 12px; color: rgba(240,237,232,0.45); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
@@ -55,6 +66,14 @@
     <div class="logo">Vibe Curator</div>
     <div class="logo-sub">three words · one feeling</div>
     <div class="logo-credit">curated by Gastón Tau</div>
+
+    <div class="spotify-bar" id="spotifyBar">
+      <button class="spotify-btn" id="spotifyConnectBtn" onclick="connectSpotify()">
+        <svg viewBox="0 0 24 24"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
+        Conectar Spotify
+      </button>
+    </div>
+
     <div class="input-row">
       <input class="word-input" id="w1" placeholder="word one" maxlength="20">
       <input class="word-input" id="w2" placeholder="word two" maxlength="20">
@@ -70,7 +89,14 @@
     </div>
   </div>
 </div>
+
 <script>
+// ── CONFIG ──────────────────────────────────────────────
+const CLIENT_ID = 'b618d04f2a6d468dab12a5d81befc2b6';
+const REDIRECT_URI = 'https://gaston-beep.github.io/VIBE-CURATOR/';
+const SCOPES = 'user-top-read user-library-read playlist-read-private';
+
+// ── IMAGE BANK ──────────────────────────────────────────
 const IMAGE_BANK = {
   melancholy:["https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=1200&q=80","https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1200&q=80","https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1200&q=80"],
   rain:["https://images.unsplash.com/photo-1519692933481-e162a57d6721?w=1200&q=80","https://images.unsplash.com/photo-1500964757637-c85e8a162699?w=1200&q=80","https://images.unsplash.com/photo-1501854140801-50d01698950b?w=1200&q=80"],
@@ -91,7 +117,9 @@ const IMAGE_BANK = {
   space:["https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=1200&q=80","https://images.unsplash.com/photo-1502134249126-9f3755a50d78?w=1200&q=80","https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1200&q=80"],
   vintage:["https://images.unsplash.com/photo-1517841905240-472988babdf9?w=1200&q=80","https://images.unsplash.com/photo-1519710164239-da123dc03ef4?w=1200&q=80","https://images.unsplash.com/photo-1508672019048-805c876b67e2?w=1200&q=80"],
 };
-const PLAYLISTS = {
+
+// ── FALLBACK PLAYLISTS ──────────────────────────────────
+const FALLBACK = {
   melancholy:[{t:"Skinny Love",a:"Bon Iver",id:"1hRz2y3beEJnVJrOJHDQTg"},{t:"Holocene",a:"Bon Iver",id:"5U4yFKJ6dqNGn7TpNMhInL"},{t:"Motion Picture Soundtrack",a:"Radiohead",id:"5XbXMCOmH3CsRxXSNRQV1L"},{t:"Lua",a:"Bright Eyes",id:"2ZtN7bFfLqPhvz2sFpHi6I"},{t:"Casimir Pulaski Day",a:"Sufjan Stevens",id:"6FBEd5T9x9Hy8LPbgNJMOk"}],
   rain:[{t:"Rain",a:"The Beatles",id:"2FsA9JW1SeJFRFzuNaEFMV"},{t:"Set Fire to the Rain",a:"Adele",id:"77VObIrYmvChLGNONqxqXq"},{t:"November Rain",a:"Guns N' Roses",id:"4BbQnkVJiHXZGDTzBPdFzH"},{t:"Riders on the Storm",a:"The Doors",id:"7BXJUfBPZ0PVoML4hZTFuQ"},{t:"Only Happy When It Rains",a:"Garbage",id:"3I6ggI0YxkuZq1fPCFvEJd"}],
   forest:[{t:"In the Woods Somewhere",a:"Hozier",id:"1TiGJcRJkDpPAqMFiRxVmS"},{t:"Northern Lights",a:"Foals",id:"7k9mJbGq3k1KIc7mjCGQr2"},{t:"Into the Wild",a:"LP",id:"52zcpJOWqfgn3BEdw5hPFl"},{t:"Wild",a:"Troye Sivan",id:"4NAJVAFHrO5a1mCq6LpVTN"},{t:"The Creek",a:"Sufjan Stevens",id:"0nMOgdNdGUDi8yVu1l4TiJ"}],
@@ -111,14 +139,186 @@ const PLAYLISTS = {
   cold:[{t:"Winter Winds",a:"Mumford & Sons",id:"3lzMACFtcwP9fSkyKMymBM"},{t:"Skinny Love",a:"Bon Iver",id:"1hRz2y3beEJnVJrOJHDQTg"},{t:"Ice",a:"Jon Hopkins",id:"5eaVRSHkJd7FPKxnlSqFZ9"},{t:"Bleak",a:"Radiohead",id:"4KvE7DFvqstFm7lV3ioBJ6"},{t:"First Breath After Coma",a:"Explosions in the Sky",id:"1BxfuPKGuaTgP7aM0Ls6tF"}],
   fire:[{t:"Ring of Fire",a:"Johnny Cash",id:"4zBFvuIlMf6fMOIklhe7EQ"},{t:"Light My Fire",a:"The Doors",id:"4KS8TFbOYfK2XVtH3Qy4LI"},{t:"Burning Down the House",a:"Talking Heads",id:"45UPGAkMlH5FfpVa26mR7P"},{t:"Fire",a:"Jimi Hendrix",id:"5U4yFKJ6dqNGn7TpNMhInL"},{t:"Great Balls of Fire",a:"Jerry Lee Lewis",id:"6bD6SzA0WR2dKLSl4gCKXx"}],
 };
+
+// ── VIBE MATCHING ───────────────────────────────────────
 const KEYWORDS = Object.keys(IMAGE_BANK);
-const KEYWORD_ALIASES = {sad:'melancholy',lonely:'melancholy',solitude:'melancholy',sadness:'melancholy',tristeza:'melancholy',agua:'ocean',mar:'ocean',sea:'ocean',water:'ocean',wave:'ocean',waves:'ocean',lluvia:'rain',rainy:'rain',storm:'rain',tormenta:'rain',wet:'rain',bosque:'forest',trees:'forest',woods:'forest',arbol:'forest',nature:'forest',naturaleza:'forest',ciudad:'city',urban:'city',town:'city',metro:'city',downtown:'city',noche:'night',nocturno:'night',medianoche:'night',midnight:'night',desierto:'desert',sandy:'desert',seco:'desert',calor:'desert',energia:'energy',music:'energy',concert:'energy',dance:'energy',bailar:'energy',amor:'love',corazon:'love',heart:'love',romance:'love',romantic:'love',paz:'peaceful',calm:'peaceful',tranquilo:'peaceful',sereno:'peaceful',serenity:'peaceful',relax:'peaceful',nostalgia:'nostalgic',memories:'nostalgic',recuerdos:'nostalgic',pasado:'nostalgic',oscuro:'dark',sombra:'dark',shadow:'dark',black:'dark',negro:'dark',verano:'summer',sun:'summer',sol:'summer',beach:'summer',playa:'summer',sueño:'dreamy',dream:'dreamy',clouds:'dreamy',nubes:'dreamy',fantasy:'dreamy',espacio:'space',cosmos:'space',galaxy:'space',galaxia:'space',antiguo:'vintage',retro:'vintage',old:'vintage',viejo:'vintage',classic:'vintage',frio:'cold',nieve:'cold',snow:'cold',hielo:'cold',ice:'cold',winter:'cold',invierno:'cold',fuego:'fire',flame:'fire',llama:'fire',caliente:'fire',hot:'fire'};
+const ALIASES = {sad:'melancholy',lonely:'melancholy',solitude:'melancholy',sadness:'melancholy',tristeza:'melancholy',agua:'ocean',mar:'ocean',sea:'ocean',water:'ocean',wave:'ocean',waves:'ocean',lluvia:'rain',rainy:'rain',storm:'rain',tormenta:'rain',wet:'rain',bosque:'forest',trees:'forest',woods:'forest',arbol:'forest',nature:'forest',naturaleza:'forest',ciudad:'city',urban:'city',town:'city',metro:'city',downtown:'city',noche:'night',nocturno:'night',medianoche:'night',midnight:'night',desierto:'desert',sandy:'desert',seco:'desert',calor:'desert',energia:'energy',music:'energy',concert:'energy',dance:'energy',bailar:'energy',amor:'love',corazon:'love',heart:'love',romance:'love',romantic:'love',paz:'peaceful',calm:'peaceful',tranquilo:'peaceful',sereno:'peaceful',serenity:'peaceful',relax:'peaceful',nostalgia:'nostalgic',memories:'nostalgic',recuerdos:'nostalgic',pasado:'nostalgic',oscuro:'dark',sombra:'dark',shadow:'dark',black:'dark',negro:'dark',verano:'summer',sun:'summer',sol:'summer',beach:'summer',playa:'summer',sueño:'dreamy',dream:'dreamy',clouds:'dreamy',nubes:'dreamy',fantasy:'dreamy',espacio:'space',cosmos:'space',galaxy:'space',galaxia:'space',antiguo:'vintage',retro:'vintage',old:'vintage',viejo:'vintage',classic:'vintage',frio:'cold',nieve:'cold',snow:'cold',hielo:'cold',ice:'cold',winter:'cold',invierno:'cold',fuego:'fire',flame:'fire',llama:'fire',caliente:'fire',hot:'fire'};
+
 function matchVibe(words) {
   const norm = words.map(w => w.toLowerCase().trim());
-  for (const w of norm) { if (KEYWORDS.includes(w)) return w; if (KEYWORD_ALIASES[w]) return KEYWORD_ALIASES[w]; for (const k of KEYWORDS) { if (w.includes(k) || k.includes(w)) return k; } }
-  for (const w of norm) { for (const [alias, key] of Object.entries(KEYWORD_ALIASES)) { if (w.includes(alias) || alias.includes(w)) return key; } }
+  for (const w of norm) { if (KEYWORDS.includes(w)) return w; if (ALIASES[w]) return ALIASES[w]; for (const k of KEYWORDS) { if (w.includes(k) || k.includes(w)) return k; } }
+  for (const w of norm) { for (const [alias, key] of Object.entries(ALIASES)) { if (w.includes(alias) || alias.includes(w)) return key; } }
   return KEYWORDS[Math.floor(Math.random() * KEYWORDS.length)];
 }
+
+// ── SPOTIFY AUTH ────────────────────────────────────────
+let accessToken = null;
+
+function generateCodeVerifier() {
+  const array = new Uint8Array(32);
+  crypto.getRandomValues(array);
+  return btoa(String.fromCharCode(...array)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
+
+async function generateCodeChallenge(verifier) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(verifier);
+  const digest = await crypto.subtle.digest('SHA-256', data);
+  return btoa(String.fromCharCode(...new Uint8Array(digest))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
+
+async function connectSpotify() {
+  const verifier = generateCodeVerifier();
+  const challenge = await generateCodeChallenge(verifier);
+  sessionStorage.setItem('code_verifier', verifier);
+  const params = new URLSearchParams({
+    client_id: CLIENT_ID,
+    response_type: 'code',
+    redirect_uri: REDIRECT_URI,
+    scope: SCOPES,
+    code_challenge_method: 'S256',
+    code_challenge: challenge,
+  });
+  window.location = `https://accounts.spotify.com/authorize?${params}`;
+}
+
+async function exchangeToken(code) {
+  const verifier = sessionStorage.getItem('code_verifier');
+  const res = await fetch('https://accounts.spotify.com/api/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ client_id: CLIENT_ID, grant_type: 'authorization_code', code, redirect_uri: REDIRECT_URI, code_verifier: verifier })
+  });
+  const data = await res.json();
+  if (data.access_token) {
+    accessToken = data.access_token;
+    localStorage.setItem('vc_token', data.access_token);
+    localStorage.setItem('vc_token_exp', Date.now() + data.expires_in * 1000);
+    if (data.refresh_token) localStorage.setItem('vc_refresh', data.refresh_token);
+    sessionStorage.removeItem('code_verifier');
+    window.history.replaceState({}, '', window.location.pathname);
+    showConnected();
+  }
+}
+
+async function refreshToken() {
+  const refresh = localStorage.getItem('vc_refresh');
+  if (!refresh) return false;
+  const res = await fetch('https://accounts.spotify.com/api/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ client_id: CLIENT_ID, grant_type: 'refresh_token', refresh_token: refresh })
+  });
+  const data = await res.json();
+  if (data.access_token) {
+    accessToken = data.access_token;
+    localStorage.setItem('vc_token', data.access_token);
+    localStorage.setItem('vc_token_exp', Date.now() + data.expires_in * 1000);
+    return true;
+  }
+  return false;
+}
+
+async function getValidToken() {
+  const exp = parseInt(localStorage.getItem('vc_token_exp') || '0');
+  if (accessToken && Date.now() < exp - 60000) return accessToken;
+  const stored = localStorage.getItem('vc_token');
+  if (stored && Date.now() < exp - 60000) { accessToken = stored; return accessToken; }
+  const ok = await refreshToken();
+  return ok ? accessToken : null;
+}
+
+function showConnected() {
+  const bar = document.getElementById('spotifyBar');
+  bar.innerHTML = `<div class="spotify-connected"><span class="dot"></span> Spotify conectado <button class="spotify-logout" onclick="logout()">desconectar</button></div>`;
+}
+
+function logout() {
+  localStorage.removeItem('vc_token');
+  localStorage.removeItem('vc_token_exp');
+  localStorage.removeItem('vc_refresh');
+  accessToken = null;
+  document.getElementById('spotifyBar').innerHTML = `<button class="spotify-btn" id="spotifyConnectBtn" onclick="connectSpotify()"><svg viewBox="0 0 24 24"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>Conectar Spotify</button>`;
+}
+
+// ── SPOTIFY API ─────────────────────────────────────────
+async function spotifyFetch(url) {
+  const token = await getValidToken();
+  if (!token) return null;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  if (!res.ok) return null;
+  return res.json();
+}
+
+// Get user's top tracks and map them to vibes using audio features
+async function getPersonalTracks(vibe) {
+  try {
+    // Get top tracks (medium term = ~6 months)
+    const top = await spotifyFetch('https://api.spotify.com/v1/me/top/tracks?limit=50&time_range=medium_term');
+    if (!top || !top.items || top.items.length === 0) return null;
+
+    // Get audio features for all top tracks
+    const ids = top.items.map(t => t.id).join(',');
+    const features = await spotifyFetch(`https://api.spotify.com/v1/audio-features?ids=${ids}`);
+    if (!features || !features.audio_features) return null;
+
+    // Score each track against the vibe
+    const scored = top.items.map((track, i) => {
+      const f = features.audio_features[i];
+      if (!f) return { track, score: 0 };
+      return { track, score: vibeScore(f, vibe) };
+    });
+
+    // Sort by score descending and take top 5
+    scored.sort((a, b) => b.score - a.score);
+    const best = scored.slice(0, 5);
+
+    return best.map(({ track }) => ({
+      t: track.name,
+      a: track.artists.map(a => a.name).join(', '),
+      id: track.id,
+      img: track.album.images?.[1]?.url || track.album.images?.[0]?.url || null
+    }));
+  } catch(e) {
+    return null;
+  }
+}
+
+// Score a track's audio features against a vibe
+function vibeScore(f, vibe) {
+  const profiles = {
+    melancholy: { valence: [0, 0.3], energy: [0, 0.4], acousticness: [0.5, 1] },
+    rain:       { valence: [0, 0.4], energy: [0.2, 0.5], acousticness: [0.3, 0.8] },
+    forest:     { valence: [0.3, 0.7], energy: [0.2, 0.5], acousticness: [0.5, 1] },
+    ocean:      { valence: [0.3, 0.7], energy: [0.2, 0.55], acousticness: [0.3, 0.8] },
+    city:       { valence: [0.4, 0.8], energy: [0.5, 0.9], danceability: [0.5, 1] },
+    night:      { valence: [0.2, 0.6], energy: [0.3, 0.7], danceability: [0.4, 0.8] },
+    desert:     { valence: [0.3, 0.6], energy: [0.3, 0.6], acousticness: [0.2, 0.6] },
+    fire:       { valence: [0.4, 0.9], energy: [0.7, 1], loudness: [-5, 0] },
+    cold:       { valence: [0.1, 0.4], energy: [0.1, 0.4], acousticness: [0.5, 1] },
+    love:       { valence: [0.4, 0.9], energy: [0.2, 0.6], acousticness: [0.3, 0.8] },
+    energy:     { valence: [0.5, 1], energy: [0.7, 1], danceability: [0.6, 1] },
+    peaceful:   { valence: [0.3, 0.7], energy: [0.1, 0.35], acousticness: [0.6, 1] },
+    nostalgic:  { valence: [0.3, 0.7], energy: [0.3, 0.6], acousticness: [0.2, 0.7] },
+    dark:       { valence: [0, 0.25], energy: [0.2, 0.6], acousticness: [0.2, 0.7] },
+    summer:     { valence: [0.6, 1], energy: [0.6, 1], danceability: [0.6, 1] },
+    dreamy:     { valence: [0.3, 0.7], energy: [0.2, 0.5], instrumentalness: [0.1, 1] },
+    space:      { valence: [0.2, 0.6], energy: [0.2, 0.6], instrumentalness: [0.2, 1] },
+    vintage:    { valence: [0.4, 0.8], energy: [0.2, 0.6], acousticness: [0.4, 1] },
+  };
+  const profile = profiles[vibe] || profiles.dreamy;
+  let score = 0;
+  const featureMap = { valence: f.valence, energy: f.energy, danceability: f.danceability, acousticness: f.acousticness, instrumentalness: f.instrumentalness, loudness: (f.loudness + 60) / 60 };
+  for (const [key, [min, max]] of Object.entries(profile)) {
+    const val = featureMap[key];
+    if (val === undefined) continue;
+    if (val >= min && val <= max) score += 1;
+    else score -= Math.abs(val - (min + max) / 2);
+  }
+  return score;
+}
+
+// ── MAIN CURATE ─────────────────────────────────────────
 async function curate() {
   const w1 = document.getElementById('w1').value.trim();
   const w2 = document.getElementById('w2').value.trim();
@@ -126,33 +326,77 @@ async function curate() {
   const errorMsg = document.getElementById('errorMsg');
   if (!w1 || !w2 || !w3) { errorMsg.textContent = 'Ingresá tres palabras para encontrar tu vibe.'; errorMsg.style.display = 'block'; return; }
   errorMsg.style.display = 'none';
+
   const btn = document.getElementById('curateBtn');
   const loading = document.getElementById('loadingTxt');
   btn.disabled = true; loading.style.display = 'block';
   document.getElementById('resultSection').classList.remove('visible');
+
   const vibe = matchVibe([w1, w2, w3]);
   const imgs = IMAGE_BANK[vibe];
-  const tracks = PLAYLISTS[vibe] || PLAYLISTS.dreamy;
-  await new Promise(r => setTimeout(r, 900));
+
+  // Try Spotify first, fall back to static list
+  const token = await getValidToken();
+  let tracks = null;
+  let usingSpotify = false;
+  if (token) {
+    loading.textContent = 'Buscando en tu Spotify...';
+    tracks = await getPersonalTracks(vibe);
+    if (tracks) usingSpotify = true;
+  }
+  if (!tracks) tracks = (FALLBACK[vibe] || FALLBACK.dreamy).map(t => ({ ...t, img: null }));
+
+  // Set backgrounds
   document.getElementById('bg1').src = imgs[0];
   document.getElementById('bg2').src = imgs[1];
   document.getElementById('bg3').src = imgs[2];
   document.getElementById('bgLayer').classList.add('visible');
   document.getElementById('overlay').style.opacity = '1';
+
+  // Render tracks
   const grid = document.getElementById('playlistGrid');
   grid.innerHTML = '';
   tracks.forEach((track, i) => {
     const a = document.createElement('a');
     a.href = `https://open.spotify.com/track/${track.id}`;
     a.target = '_blank'; a.rel = 'noopener noreferrer'; a.className = 'track-item';
-    a.innerHTML = `<span class="track-num">${i+1}</span><div class="track-info"><div class="track-name">${track.t}</div><div class="track-artist">${track.a}</div></div><svg class="track-icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>`;
+    const coverHtml = track.img
+      ? `<img class="track-cover" src="${track.img}" alt="">`
+      : `<svg class="track-icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>`;
+    a.innerHTML = `<span class="track-num">${i+1}</span>${coverHtml}<div class="track-info"><div class="track-name">${track.t}</div><div class="track-artist">${track.a}</div></div><svg class="track-icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>`;
     grid.appendChild(a);
   });
+
   document.getElementById('wordsTags').innerHTML = [w1,w2,w3].map(w => `<span class="tag">${w}</span>`).join('');
-  document.getElementById('vibeLabel').textContent = `${vibe} playlist · 5 tracks`;
+  const sourceLabel = usingSpotify ? 'from your spotify · ' : '';
+  document.getElementById('vibeLabel').textContent = `${sourceLabel}${vibe} · 5 tracks`;
   document.getElementById('resultSection').classList.add('visible');
-  loading.style.display = 'none'; btn.disabled = false; btn.textContent = 'Recurate';
+
+  loading.style.display = 'none'; loading.textContent = 'Reading the vibe...';
+  btn.disabled = false; btn.textContent = 'Recurate';
 }
+
+// ── INIT ─────────────────────────────────────────────────
+(async () => {
+  // Check if returning from Spotify auth
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('code');
+  if (code) {
+    await exchangeToken(code);
+    return;
+  }
+  // Check stored token
+  const stored = localStorage.getItem('vc_token');
+  const exp = parseInt(localStorage.getItem('vc_token_exp') || '0');
+  if (stored && Date.now() < exp - 60000) {
+    accessToken = stored;
+    showConnected();
+  } else if (localStorage.getItem('vc_refresh')) {
+    const ok = await refreshToken();
+    if (ok) showConnected();
+  }
+})();
+
 document.querySelectorAll('.word-input').forEach((input, i, arr) => {
   input.addEventListener('keydown', e => { if (e.key === 'Enter') { if (i < arr.length - 1) arr[i+1].focus(); else curate(); } });
 });
